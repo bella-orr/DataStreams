@@ -1,6 +1,9 @@
 import javax.swing.*;
+import javax.swing.border.LineBorder;
+import javax.swing.border.TitledBorder;
 import java.awt.*;
 import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -8,6 +11,7 @@ import java.util.*;
 import java.util.List;
 import java.util.stream.Stream;
 
+import static java.awt.Color.black;
 import static java.nio.file.StandardOpenOption.CREATE;
 
 public class DataStreamFrame extends JFrame
@@ -26,6 +30,7 @@ public class DataStreamFrame extends JFrame
     JButton quitBtn;
     JButton searchBtn;
     JButton fileBtn;
+    JButton clearBtn;
 
     //JScrollPane
     JScrollPane fileScroller;
@@ -38,14 +43,17 @@ public class DataStreamFrame extends JFrame
     JTextArea fileArea;
     JTextArea returnArea;
 
-    //Jlabels
+    //JLabels
     JLabel searchLabel;
+
 
     //other declarations
     JFileChooser chooser = new JFileChooser();
     File selectedFile;
     String line = "";
-    Map<String, List<String>> searchWord = new TreeMap<>();
+    File workingDirectory;
+    Path file;
+
 
     public DataStreamFrame()
     {
@@ -94,7 +102,7 @@ public class DataStreamFrame extends JFrame
         searchField = new JTextField();
         searchBtn = new JButton("Search");
 
-        searchBtn.addActionListener((ActionEvent ae) -> getReturn3());
+        searchBtn.addActionListener((ActionEvent ae) -> getReturn());
 
         searchPnl.add(searchLabel);
         searchPnl.add(searchField);
@@ -106,6 +114,8 @@ public class DataStreamFrame extends JFrame
     private void createFilePnl()
     {
         filePnl = new JPanel();
+
+        filePnl.setBorder(new TitledBorder((new LineBorder(black, 4 )), "Selected File:"));
 
         fileArea = new JTextArea(20,30);
         fileArea.setEditable(false);
@@ -119,6 +129,8 @@ public class DataStreamFrame extends JFrame
     {
         returnPnl = new JPanel();
 
+        returnPnl.setBorder(new TitledBorder((new LineBorder(black, 4 )), "Search Results:"));
+
         returnArea = new JTextArea(20,30);
         returnArea.setEditable(false);
 
@@ -130,30 +142,34 @@ public class DataStreamFrame extends JFrame
     private void createButtonPnl() //makes the button panel
     {
         buttonPnl= new JPanel();
-        buttonPnl.setLayout(new GridLayout(1, 2));
+        buttonPnl.setLayout(new GridLayout(1, 3));
 
         fileBtn = new JButton("Choose File");
+        clearBtn = new JButton("Clear");
         quitBtn = new JButton("Quit");
 
         fileBtn.addActionListener((ActionEvent ae) -> getFile());
+        clearBtn.addActionListener((ActionListener) -> clearGUI());
         quitBtn.addActionListener((ActionEvent ae) -> System.exit(0));
 
         buttonPnl.add(fileBtn);
+        buttonPnl.add(clearBtn);
         buttonPnl.add(quitBtn);
     }
 
-    private void getFile()
+
+    public void getFile()
     {
         try
         {
-            File workingDirectory = new File(System.getProperty("user.dir"));
+            workingDirectory = new File(System.getProperty("user.dir"));
             chooser.setCurrentDirectory(workingDirectory);
 
             if (chooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION)
             {
                 selectedFile = chooser.getSelectedFile();
 
-                Path file = selectedFile.toPath();
+                file = selectedFile.toPath();
 
                 fileArea.append("File name selected: " + selectedFile.getName());
 
@@ -168,6 +184,13 @@ public class DataStreamFrame extends JFrame
                     line = reader.readLine();
                 }
             }
+
+            else
+            {
+                fileArea.append("Please Select a File. \n");
+            }
+
+            file = selectedFile.toPath();
         }
         catch (FileNotFoundException e)
         {
@@ -180,43 +203,45 @@ public class DataStreamFrame extends JFrame
         }
     }
 
-
-    public void getReturn3()
+    private void clearGUI()
     {
-        File workingDirectory = new File(System.getProperty("user.dir"));
-        chooser.setCurrentDirectory(workingDirectory);
+        fileArea.setText(null);
+        returnArea.setText(null);
+        searchField.setText(null);
 
-        if (chooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION)
+
+    }
+
+
+    public void getReturn()
+    {
+        file = selectedFile.toPath();
+
+
+        try(Stream<String> lines = Files.lines(file))
         {
-            selectedFile = chooser.getSelectedFile();
-            Path file2 = selectedFile.toPath();
+            lines.forEach(line ->
+                    {
+                        String processedLine = line.toLowerCase();
 
-
-            try(Stream<String> lines = Files.lines(file2))
-            {
-                lines.forEach(line ->
+                        if (processedLine.contains(searchField.getText().toLowerCase()))
                         {
-                            String processedLine = line.toLowerCase();
-
-                            if (processedLine.contains(searchField.getText().toLowerCase()))
-                            {
-                                returnArea.append(line + "\n");
-                            }
-
+                            returnArea.append(line + "\n");
                         }
-                );
-            }
-            catch (FileNotFoundException e)
-            {
-                fileArea.append("File not found.");
-                e.printStackTrace();
-            }
-            catch (IOException e)
-            {
-                e.printStackTrace();
-            }
 
+                    }
+            );
         }
+        catch (FileNotFoundException e)
+        {
+            fileArea.append("File not found.");
+            e.printStackTrace();
+        }
+        catch (IOException e)
+        {
+            e.printStackTrace();
+        }
+
 
     }
 
