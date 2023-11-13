@@ -5,6 +5,8 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.List;
+import java.util.stream.Stream;
 
 import static java.nio.file.StandardOpenOption.CREATE;
 
@@ -16,6 +18,7 @@ public class DataStreamFrame extends JFrame
     JPanel mainPnl;
     JPanel buttonPnl;
     JPanel searchPnl;
+    JPanel textPnl;
     JPanel filePnl;
     JPanel returnPnl;
 
@@ -42,6 +45,7 @@ public class DataStreamFrame extends JFrame
     JFileChooser chooser = new JFileChooser();
     File selectedFile;
     String line = "";
+    Map<String, List<String>> searchWord = new TreeMap<>();
 
     public DataStreamFrame()
     {
@@ -49,23 +53,36 @@ public class DataStreamFrame extends JFrame
         mainPnl.setLayout(new BorderLayout());
 
 
-        createButtonPnl();
-        mainPnl.add(buttonPnl, BorderLayout.SOUTH);
 
         createSearchPnl();
         mainPnl.add(searchPnl, BorderLayout.NORTH);
 
+        createTextPnl();
+        mainPnl.add(textPnl, BorderLayout.CENTER);
 
-        createFilePnl();
-        mainPnl.add(filePnl, BorderLayout.CENTER);
+        createButtonPnl();
+        mainPnl.add(buttonPnl, BorderLayout.SOUTH);
+
 
 
         add(mainPnl);
         setTitle("Data Stream");
-        setSize(500, 500);
+        setSize(600, 500);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setVisible(true);
+    }
+
+    private void createTextPnl()
+    {
+        textPnl = new JPanel();
+        textPnl.setLayout(new BorderLayout());
+
+        createFilePnl();
+        textPnl.add(filePnl, BorderLayout.LINE_START);
+
+        createReturnPnl();
+        textPnl.add(returnPnl, BorderLayout.LINE_END);
     }
 
     private void createSearchPnl()
@@ -77,11 +94,14 @@ public class DataStreamFrame extends JFrame
         searchField = new JTextField();
         searchBtn = new JButton("Search");
 
+        searchBtn.addActionListener((ActionEvent ae) -> getReturn3());
+
         searchPnl.add(searchLabel);
         searchPnl.add(searchField);
         searchPnl.add(searchBtn);
 
     }
+
 
     private void createFilePnl()
     {
@@ -93,8 +113,19 @@ public class DataStreamFrame extends JFrame
         fileScroller = new JScrollPane(fileArea);
         filePnl.add(fileScroller);
 
-        
     }
+
+    private void createReturnPnl()
+    {
+        returnPnl = new JPanel();
+
+        returnArea = new JTextArea(20,30);
+        returnArea.setEditable(false);
+
+        returnScroller = new JScrollPane(returnArea);
+        returnPnl.add(returnScroller);
+    }
+
 
     private void createButtonPnl() //makes the button panel
     {
@@ -147,6 +178,46 @@ public class DataStreamFrame extends JFrame
         {
             e.printStackTrace();
         }
+    }
+
+
+    public void getReturn3()
+    {
+        File workingDirectory = new File(System.getProperty("user.dir"));
+        chooser.setCurrentDirectory(workingDirectory);
+
+        if (chooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION)
+        {
+            selectedFile = chooser.getSelectedFile();
+            Path file2 = selectedFile.toPath();
+
+
+            try(Stream<String> lines = Files.lines(file2))
+            {
+                lines.forEach(line ->
+                        {
+                            String processedLine = line.toLowerCase();
+
+                            if (processedLine.contains(searchField.getText().toLowerCase()))
+                            {
+                                returnArea.append(line + "\n");
+                            }
+
+                        }
+                );
+            }
+            catch (FileNotFoundException e)
+            {
+                fileArea.append("File not found.");
+                e.printStackTrace();
+            }
+            catch (IOException e)
+            {
+                e.printStackTrace();
+            }
+
+        }
+
     }
 
 }
