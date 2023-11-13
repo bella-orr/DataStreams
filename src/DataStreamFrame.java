@@ -217,6 +217,8 @@ public class DataStreamFrame extends JFrame
     {
         file = selectedFile.toPath();
 
+        returnArea.setText(null);
+
 
         try(Stream<String> lines = Files.lines(file))
         {
